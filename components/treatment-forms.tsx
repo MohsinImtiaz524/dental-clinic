@@ -573,19 +573,33 @@ function ScheduleField({ required = true }: { required?: boolean }) {
 }
 
 async function optimizePrintImage(file: File) {
-  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) throw new Error("Choose a PNG, JPG, or WebP image.");
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, 1800 / Math.max(bitmap.width, bitmap.height));
+  const supportedType = ["image/png", "image/jpeg", "image/webp", "image/bmp", "image/x-ms-bmp"].includes(file.type);
+  if (!supportedType && !/\.bmp$/i.test(file.name)) throw new Error("Choose a BMP, PNG, JPG, or WebP image.");
+  let source: ImageBitmap | HTMLImageElement;
+  let objectUrl = "";
+  try {
+    source = await createImageBitmap(file);
+  } catch {
+    objectUrl = URL.createObjectURL(file);
+    source = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("This bitmap image could not be opened by the browser."));
+      image.src = objectUrl;
+    });
+  }
+  const scale = Math.min(1, 1800 / Math.max(source.width, source.height));
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.width = Math.max(1, Math.round(source.width * scale));
+  canvas.height = Math.max(1, Math.round(source.height * scale));
   const context = canvas.getContext("2d");
   if (!context) throw new Error("This browser could not prepare the image.");
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
   context.filter = "contrast(1.16) brightness(1.04) saturate(1.06)";
-  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  if (source instanceof ImageBitmap) source.close();
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
   let blob: Blob | null = null;
   for (const quality of [0.88, 0.82, 0.74]) {
     blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
@@ -598,7 +612,7 @@ async function optimizePrintImage(file: File) {
 function PrintImageInput({ number }: { number: number }) {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
-  return <div className="space-y-1.5"><Label htmlFor={`prescription-image-${number}`}>Image {number}</Label><Input id={`prescription-image-${number}`} name={`image${number}`} type="file" accept="image/png,image/jpeg,image/webp" className="h-auto py-2" onChange={async event => {
+  return <div className="space-y-1.5"><Label htmlFor={`prescription-image-${number}`}>Image {number}</Label><Input id={`prescription-image-${number}`} name={`image${number}`} type="file" accept=".bmp,image/bmp,image/x-ms-bmp,image/png,image/jpeg,image/webp" className="h-auto py-2" onChange={async event => {
     const input = event.currentTarget;
     const file = input.files?.[0];
     setError("");
