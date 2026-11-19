@@ -1,8 +1,10 @@
 "use client";
 import { useActionState, useId, useState } from "react";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, Plus, Search, Trash2, X } from "lucide-react";
+import { Autocomplete } from "@base-ui/react/autocomplete";
 import {
   createPrescriptionAction,
+  createMedicineCatalogAction,
   createTreatmentCatalogAction,
   createTreatmentRecordAction,
   saveConsultationAction,
@@ -55,6 +57,11 @@ export function TreatmentCatalogForm() {
       </Button>
     </form>
   );
+}
+
+export function MedicineCatalogForm() {
+  const [state, action, pending] = useActionState(createMedicineCatalogAction, {});
+  return <form action={action} className="space-y-4"><Field label="Medicine name and strength" name="name" placeholder="e.g. Amoxicillin 500 mg"/><Message state={state}/><Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save medicine"}</Button></form>;
 }
 
 export function TreatmentRecordForm({
@@ -199,10 +206,12 @@ export function ConsultationPanelForm({
   appointmentId,
   consultation,
   treatments,
+  medicines,
 }: {
   appointmentId: string;
   consultation?: Consultation | null;
   treatments: { id: string; name: string }[];
+  medicines: { id: string; name: string }[];
 }) {
   const [state, action, pending] = useActionState(
     saveConsultationPanelAction,
@@ -313,12 +322,7 @@ export function ConsultationPanelForm({
               )}
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Field
-                label="Medicine & strength"
-                name="medicine"
-                placeholder="e.g. Medicine name 500 mg"
-                required={false}
-              />
+              <MedicineField medicines={medicines} required={false} />
               <Field
                 label="Dosage"
                 name="dosage"
@@ -368,7 +372,7 @@ export function ConsultationPanelForm({
   );
 }
 
-export function PrescriptionForm({ appointmentId }: { appointmentId: string }) {
+export function PrescriptionForm({ appointmentId, medicines = [] }: { appointmentId: string; medicines?: { id: string; name: string }[] }) {
   const [state, action, pending] = useActionState(createPrescriptionAction, {});
   const [rows, setRows] = useState<MedicineRow[]>([{ key: 1 }]);
   const [next, setNext] = useState(2);
@@ -434,11 +438,7 @@ export function PrescriptionForm({ appointmentId }: { appointmentId: string }) {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="sm:col-span-2 lg:col-span-1">
-              <Field
-                label="Medicine & strength"
-                name="medicine"
-                placeholder="Amoxicillin 500 mg"
-              />
+              <MedicineField medicines={medicines} />
             </div>
             <Field label="Dosage" name="dosage" placeholder="1 tablet" />
             <ScheduleField />
@@ -521,6 +521,13 @@ function Field({
     </div>
   );
 }
+
+function MedicineField({ medicines, required = true }: { medicines: { id: string; name: string }[]; required?: boolean }) {
+  const id = useId();
+  const names = medicines.map(item => item.name);
+  return <div className="space-y-1.5"><Label htmlFor={id}>Medicine & strength</Label><Autocomplete.Root items={names} autoHighlight mode="list"><Autocomplete.InputGroup className="relative flex h-10 w-full items-center rounded-lg border border-input bg-white transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30"><Search className="ml-3 size-4 shrink-0 text-muted-foreground" aria-hidden="true"/><Autocomplete.Input id={id} name="medicine" required={required} maxLength={120} autoComplete="off" placeholder="Search saved medicines or type a new name" className="h-full min-w-0 flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground"/><Autocomplete.Clear aria-label="Clear medicine" className="flex size-9 items-center justify-center text-muted-foreground hover:text-foreground data-disabled:hidden"><X className="size-3.5"/></Autocomplete.Clear><Autocomplete.Trigger aria-label="Show saved medicines" className="flex size-10 items-center justify-center border-l text-muted-foreground hover:bg-muted"><ChevronDown className="size-4"/></Autocomplete.Trigger></Autocomplete.InputGroup><Autocomplete.Portal><Autocomplete.Positioner sideOffset={5} className="z-50 outline-none"><Autocomplete.Popup className="w-[var(--anchor-width)] max-w-[var(--available-width)] overflow-hidden rounded-xl border bg-white text-foreground shadow-lg transition-[scale,opacity] duration-100 data-starting-style:scale-95 data-starting-style:opacity-0 data-ending-style:scale-95 data-ending-style:opacity-0"><Autocomplete.Empty className="px-4 py-5 text-center text-sm text-muted-foreground">No saved medicine matches. Keep typing to use a new name.</Autocomplete.Empty><Autocomplete.List className="max-h-[min(18rem,var(--available-height))] overflow-y-auto overscroll-contain p-1.5 outline-none data-empty:p-0">{(name: string) => <Autocomplete.Item key={name} value={name} className="cursor-default rounded-lg px-3 py-2.5 text-sm font-medium outline-none data-highlighted:bg-[#edf5f1] data-highlighted:text-[#176452]">{name}</Autocomplete.Item>}</Autocomplete.List></Autocomplete.Popup></Autocomplete.Positioner></Autocomplete.Portal></Autocomplete.Root><p className="text-xs text-muted-foreground">Choose a saved medicine or keep your typed name.</p></div>;
+}
+
 function TextArea({
   label,
   name,

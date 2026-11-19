@@ -29,6 +29,18 @@ export async function createTreatmentCatalogAction(_: TreatmentFormState, form: 
   redirect("/treatments?created=1");
 }
 
+export async function createMedicineCatalogAction(_: TreatmentFormState, form: FormData): Promise<TreatmentFormState> {
+  await requireUser();
+  const name = field(form, "name").replace(/\s+/g, " ");
+  if (name.length < 2 || name.length > 120) return { error: "Enter a medicine name between 2 and 120 characters." };
+  try {
+    await db.medicineCatalog.create({ data: { name } });
+  } catch { return { error: "That medicine is already saved or could not be added." }; }
+  revalidatePath("/treatments");
+  revalidatePath("/appointments/[id]/consultation", "page");
+  redirect("/treatments?medicine=created");
+}
+
 export async function createTreatmentRecordAction(_: TreatmentFormState, form: FormData): Promise<TreatmentFormState> {
   await requireUser();
   const appointmentId = field(form, "appointmentId");
