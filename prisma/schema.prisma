@@ -50,7 +50,9 @@ model Patient {
   name         String
   phone        String?
   age          Int?
+  weightKg     Float?
   gender       String?
+  address      String?
   identityKey  String? @unique
   createdAt    DateTime @default(now())
   appointments Appointment[]
@@ -96,6 +98,9 @@ model Consultation {
   referralSpecialist  String?
   referralReason      String?
   referralInstructions String?
+  patientConsent      Boolean @default(false)
+  consentNotes        String?
+  consentedAt         DateTime?
   updatedAt           DateTime @updatedAt
 }
 
@@ -109,7 +114,11 @@ model ClinicSettings {
   email              String?
   openingDays        String?
   openingHours       String?
+  openingTime        String?
+  closingTime        String?
   breakTimings       String?
+  phcRegistrationNumber String?
+  phcLicenseNumber   String?
   appointmentContact String?
   emergencyContact   String?
   updatedAt          DateTime @updatedAt
@@ -121,6 +130,7 @@ model DoctorProfile {
   title          String @default("Dr.")
   qualifications String?
   specialization String?
+  experiences    String?
   pmdcNumber     String?
   designation    String?
   signatureDataUrl String?

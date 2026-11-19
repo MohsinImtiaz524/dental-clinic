@@ -1,41 +1,590 @@
 "use client";
 import { useActionState, useId, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
-import { createPrescriptionAction, createTreatmentCatalogAction, createTreatmentRecordAction, saveConsultationAction, saveConsultationPanelAction } from "@/app/actions/treatments";
+import {
+  createPrescriptionAction,
+  createTreatmentCatalogAction,
+  createTreatmentRecordAction,
+  saveConsultationAction,
+  saveConsultationPanelAction,
+} from "@/app/actions/treatments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-function Message({state}:{state:{error?:string;success?:string}}) { return <>{state.error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{state.error}</p>}{state.success&&<p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{state.success}</p>}</>; }
+function Message({ state }: { state: { error?: string; success?: string } }) {
+  return (
+    <>
+      {state.error && (
+        <p
+          role="alert"
+          className="rounded-lg bg-red-50 p-3 text-sm text-red-800"
+        >
+          {state.error}
+        </p>
+      )}
+      {state.success && (
+        <p
+          role="status"
+          className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800"
+        >
+          {state.success}
+        </p>
+      )}
+    </>
+  );
+}
 
 export function TreatmentCatalogForm() {
-  const [state,action,pending]=useActionState(createTreatmentCatalogAction,{});
-  return <form action={action} className="space-y-4"><Field label="Treatment name" name="name" placeholder="e.g. Wound dressing"/><Field label="Description" name="description" required={false}/><Message state={state}/><Button type="submit" disabled={pending}>{pending?"Saving…":"Add treatment"}</Button></form>;
+  const [state, action, pending] = useActionState(
+    createTreatmentCatalogAction,
+    {},
+  );
+  return (
+    <form action={action} className="space-y-4">
+      <Field
+        label="Treatment name"
+        name="name"
+        placeholder="e.g. Wound dressing"
+      />
+      <Field label="Description" name="description" required={false} />
+      <Message state={state} />
+      <Button type="submit" disabled={pending}>
+        {pending ? "Saving…" : "Add treatment"}
+      </Button>
+    </form>
+  );
 }
 
-export function TreatmentRecordForm({appointmentId,treatments}:{appointmentId:string;treatments:{id:string;name:string}[]}) {
-  const [state,action,pending]=useActionState(createTreatmentRecordAction,{});
-  return <form action={action} className="space-y-4"><input type="hidden" name="appointmentId" value={appointmentId}/><div className="space-y-2"><Label htmlFor="treatmentId">Treatment</Label><select id="treatmentId" name="treatmentId" required defaultValue="" className="h-10 w-full rounded-lg border bg-white px-3 text-sm"><option value="" disabled>Select treatment</option>{treatments.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></div><TextArea label="Clinical notes" name="notes"/><Message state={state}/><Button type="submit" disabled={pending}>Save treatment</Button></form>;
+export function TreatmentRecordForm({
+  appointmentId,
+  treatments,
+}: {
+  appointmentId: string;
+  treatments: { id: string; name: string }[];
+}) {
+  const [state, action, pending] = useActionState(
+    createTreatmentRecordAction,
+    {},
+  );
+  return (
+    <form action={action} className="space-y-4">
+      <input type="hidden" name="appointmentId" value={appointmentId} />
+      <div className="space-y-2">
+        <Label htmlFor="treatmentId">Treatment</Label>
+        <select
+          id="treatmentId"
+          name="treatmentId"
+          required
+          defaultValue=""
+          className="h-10 w-full rounded-lg border bg-white px-3 text-sm"
+        >
+          <option value="" disabled>
+            Select treatment
+          </option>
+          {treatments.map((x) => (
+            <option key={x.id} value={x.id}>
+              {x.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <TextArea label="Clinical notes" name="notes" />
+      <Message state={state} />
+      <Button type="submit" disabled={pending}>
+        Save treatment
+      </Button>
+    </form>
+  );
 }
 
-type Consultation={medicalHistory?:string|null;allergies?:string|null;currentMedications?:string|null;dentalHistory?:string|null;clinicalFindings?:string|null;toothNumbers?:string|null;diagnosis?:string|null;procedures?:string|null;referralSpecialist?:string|null;referralReason?:string|null;referralInstructions?:string|null};
-export function ConsultationForm({appointmentId,consultation}:{appointmentId:string;consultation?:Consultation|null}) {
-  const [state,action,pending]=useActionState(saveConsultationAction,{});
-  return <form action={action} className="space-y-4"><input type="hidden" name="appointmentId" value={appointmentId}/><div className="grid gap-4 md:grid-cols-2"><TextArea label="Medical history" name="medicalHistory" value={consultation?.medicalHistory}/><TextArea label="Allergies" name="allergies" value={consultation?.allergies}/><TextArea label="Current medications" name="currentMedications" value={consultation?.currentMedications}/><TextArea label="Dental history" name="dentalHistory" value={consultation?.dentalHistory}/><TextArea label="Clinical findings" name="clinicalFindings" value={consultation?.clinicalFindings}/><Field label="Affected tooth numbers" name="toothNumbers" value={consultation?.toothNumbers}/><TextArea label="Diagnosis" name="diagnosis" value={consultation?.diagnosis}/><TextArea label="Procedures / treatment details" name="procedures" value={consultation?.procedures}/><Field label="Referral specialist" name="referralSpecialist" value={consultation?.referralSpecialist} required={false}/><TextArea label="Referral reason" name="referralReason" value={consultation?.referralReason}/><div className="md:col-span-2"><TextArea label="Referral instructions" name="referralInstructions" value={consultation?.referralInstructions}/></div></div><Message state={state}/><Button type="submit" disabled={pending}>{pending?"Saving…":"Save consultation findings"}</Button></form>;
+type Consultation = {
+  medicalHistory?: string | null;
+  allergies?: string | null;
+  currentMedications?: string | null;
+  dentalHistory?: string | null;
+  clinicalFindings?: string | null;
+  toothNumbers?: string | null;
+  diagnosis?: string | null;
+  procedures?: string | null;
+  referralSpecialist?: string | null;
+  referralReason?: string | null;
+  referralInstructions?: string | null;
+  patientConsent?: boolean;
+  consentNotes?: string | null;
+};
+export function ConsultationForm({
+  appointmentId,
+  consultation,
+}: {
+  appointmentId: string;
+  consultation?: Consultation | null;
+}) {
+  const [state, action, pending] = useActionState(saveConsultationAction, {});
+  return (
+    <form action={action} className="space-y-4">
+      <input type="hidden" name="appointmentId" value={appointmentId} />
+      <div className="grid gap-4 md:grid-cols-2">
+        <TextArea
+          label="Medical history"
+          name="medicalHistory"
+          value={consultation?.medicalHistory}
+        />
+        <TextArea
+          label="Allergies"
+          name="allergies"
+          value={consultation?.allergies}
+        />
+        <TextArea
+          label="Current medications"
+          name="currentMedications"
+          value={consultation?.currentMedications}
+        />
+        <TextArea
+          label="Dental history"
+          name="dentalHistory"
+          value={consultation?.dentalHistory}
+        />
+        <TextArea
+          label="Clinical findings"
+          name="clinicalFindings"
+          value={consultation?.clinicalFindings}
+        />
+        <Field
+          label="Affected tooth numbers"
+          name="toothNumbers"
+          value={consultation?.toothNumbers}
+        />
+        <TextArea
+          label="Diagnosis"
+          name="diagnosis"
+          value={consultation?.diagnosis}
+        />
+        <TextArea
+          label="Procedures / treatment details"
+          name="procedures"
+          value={consultation?.procedures}
+        />
+        <Field
+          label="Referral specialist"
+          name="referralSpecialist"
+          value={consultation?.referralSpecialist}
+          required={false}
+        />
+        <TextArea
+          label="Referral reason"
+          name="referralReason"
+          value={consultation?.referralReason}
+        />
+        <div className="md:col-span-2">
+          <TextArea
+            label="Referral instructions"
+            name="referralInstructions"
+            value={consultation?.referralInstructions}
+          />
+        </div>
+      </div>
+      <ConsentFields consultation={consultation} />
+      <Message state={state} />
+      <Button type="submit" disabled={pending}>
+        {pending ? "Saving…" : "Save consultation findings"}
+      </Button>
+    </form>
+  );
 }
 
-type MedicineRow={key:number};
-export function ConsultationPanelForm({appointmentId,consultation,treatments}:{appointmentId:string;consultation?:Consultation|null;treatments:{id:string;name:string}[]}) {
-  const [state,action,pending]=useActionState(saveConsultationPanelAction,{}); const [rows,setRows]=useState<MedicineRow[]>([{key:1}]); const [next,setNext]=useState(2);
-  return <form action={action} className="space-y-6"><input type="hidden" name="appointmentId" value={appointmentId}/><section><h2 className="mb-3 text-base font-semibold">Clinical details <span className="text-xs font-normal text-muted-foreground">(optional)</span></h2><div className="grid gap-3 md:grid-cols-2"><TextArea label="Medical history" name="medicalHistory" value={consultation?.medicalHistory} placeholder="e.g. Diabetes, hypertension, allergies, or relevant medicines"/><TextArea label="Clinical findings" name="clinicalFindings" value={consultation?.clinicalFindings} placeholder="e.g. Swelling near tooth 46, tenderness on examination"/><TextArea label="Diagnosis" name="diagnosis" value={consultation?.diagnosis} placeholder="e.g. Dental caries affecting tooth 46"/><TextArea label="Procedure details" name="procedures" value={consultation?.procedures} placeholder="e.g. Examination completed; temporary filling placed"/></div></section><section className="border-t pt-5"><h2 className="mb-3 text-base font-semibold">Treatment <span className="text-xs font-normal text-muted-foreground">(optional)</span></h2><div className="grid gap-3 md:grid-cols-2"><div className="space-y-1.5"><Label htmlFor="panel-treatment">Select treatment</Label><select id="panel-treatment" name="treatmentId" defaultValue="" className="h-9 w-full rounded-lg border bg-white px-3 text-sm"><option value="">Choose a treatment if one was performed</option>{treatments.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></div><Field label="Treatment notes" name="treatmentNotes" placeholder="e.g. Completed successfully for tooth 46" required={false}/></div></section><section className="border-t pt-5"><h2 className="mb-3 text-base font-semibold">Prescription <span className="text-xs font-normal text-muted-foreground">(optional)</span></h2>{rows.map((row,index)=><fieldset key={row.key} className="mb-3 rounded-xl border bg-[#fafcfb] p-4"><div className="mb-3 flex justify-between"><legend className="text-sm font-semibold">Medicine {index+1}</legend>{rows.length>1&&<Button type="button" variant="ghost" size="sm" onClick={()=>setRows(items=>items.filter(item=>item.key!==row.key))}><Trash2/>Remove</Button>}</div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Field label="Medicine & strength" name="medicine" placeholder="e.g. Medicine name 500 mg" required={false}/><Field label="Dosage" name="dosage" placeholder="e.g. 1 tablet" required={false}/><Field label="English timing" name="frequency" placeholder="e.g. Morning and night" required={false}/><Field label="Timing code" name="timing" placeholder="e.g. 1-0-1" required={false}/><Field label="Duration" name="duration" placeholder="e.g. 5 days" required={false}/><Field label="Instructions" name="instructions" placeholder="e.g. Take after meals" required={false}/></div></fieldset>)}<Button type="button" variant="outline" size="sm" onClick={()=>{setRows(items=>[...items,{key:next}]);setNext(value=>value+1)}}><Plus/>Add medicine</Button><div className="mt-3"><TextArea label="Doctor's notes" name="notes" placeholder="e.g. Home-care advice, precautions, or follow-up instructions"/></div></section><Message state={state}/><div className="sticky bottom-4 rounded-xl border bg-white/95 p-3 shadow-lg backdrop-blur"><Button type="submit" className="w-full sm:w-auto" disabled={pending}>{pending?"Saving all data…":"Save consultation data"}</Button><p className="mt-2 text-xs text-muted-foreground">Saves clinical details, selected treatment, and prescription draft together.</p></div></form>;
+type MedicineRow = { key: number };
+export function ConsultationPanelForm({
+  appointmentId,
+  consultation,
+  treatments,
+}: {
+  appointmentId: string;
+  consultation?: Consultation | null;
+  treatments: { id: string; name: string }[];
+}) {
+  const [state, action, pending] = useActionState(
+    saveConsultationPanelAction,
+    {},
+  );
+  const [rows, setRows] = useState<MedicineRow[]>([{ key: 1 }]);
+  const [next, setNext] = useState(2);
+  return (
+    <form action={action} className="space-y-6">
+      <input type="hidden" name="appointmentId" value={appointmentId} />
+      <section>
+        <h2 className="mb-3 text-base font-semibold">
+          Clinical details{" "}
+          <span className="text-xs font-normal text-muted-foreground">
+            (optional)
+          </span>
+        </h2>
+        <div className="grid gap-3 md:grid-cols-2">
+          <TextArea
+            label="Medical history"
+            name="medicalHistory"
+            value={consultation?.medicalHistory}
+            placeholder="e.g. Diabetes, hypertension, allergies, or relevant medicines"
+          />
+          <TextArea
+            label="Clinical findings"
+            name="clinicalFindings"
+            value={consultation?.clinicalFindings}
+            placeholder="e.g. Swelling near tooth 46, tenderness on examination"
+          />
+          <TextArea
+            label="Diagnosis"
+            name="diagnosis"
+            value={consultation?.diagnosis}
+            placeholder="e.g. Dental caries affecting tooth 46"
+          />
+          <TextArea
+            label="Procedure details"
+            name="procedures"
+            value={consultation?.procedures}
+            placeholder="e.g. Examination completed; temporary filling placed"
+          />
+        </div>
+        <ConsentFields consultation={consultation} />
+      </section>
+      <section className="border-t pt-5">
+        <h2 className="mb-3 text-base font-semibold">
+          Treatment{" "}
+          <span className="text-xs font-normal text-muted-foreground">
+            (optional)
+          </span>
+        </h2>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="panel-treatment">Select treatment</Label>
+            <select
+              id="panel-treatment"
+              name="treatmentId"
+              defaultValue=""
+              className="h-9 w-full rounded-lg border bg-white px-3 text-sm"
+            >
+              <option value="">Choose a treatment if one was performed</option>
+              {treatments.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Field
+            label="Treatment notes"
+            name="treatmentNotes"
+            placeholder="e.g. Completed successfully for tooth 46"
+            required={false}
+          />
+        </div>
+      </section>
+      <section className="border-t pt-5">
+        <h2 className="mb-3 text-base font-semibold">
+          Prescription{" "}
+          <span className="text-xs font-normal text-muted-foreground">
+            (optional)
+          </span>
+        </h2>
+        {rows.map((row, index) => (
+          <fieldset
+            key={row.key}
+            className="mb-3 rounded-xl border bg-[#fafcfb] p-4"
+          >
+            <div className="mb-3 flex justify-between">
+              <legend className="text-sm font-semibold">
+                Medicine {index + 1}
+              </legend>
+              {rows.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setRows((items) =>
+                      items.filter((item) => item.key !== row.key),
+                    )
+                  }
+                >
+                  <Trash2 />
+                  Remove
+                </Button>
+              )}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Field
+                label="Medicine & strength"
+                name="medicine"
+                placeholder="e.g. Medicine name 500 mg"
+                required={false}
+              />
+              <Field
+                label="Dosage"
+                name="dosage"
+                placeholder="e.g. 1 tablet"
+                required={false}
+              />
+              <Field
+                label="English timing"
+                name="frequency"
+                placeholder="e.g. Morning and night"
+                required={false}
+              />
+              <Field
+                label="Timing code"
+                name="timing"
+                placeholder="e.g. 1-0-1"
+                required={false}
+              />
+              <Field
+                label="Duration"
+                name="duration"
+                placeholder="e.g. 5 days"
+                required={false}
+              />
+              <Field
+                label="Instructions"
+                name="instructions"
+                placeholder="e.g. Take after meals"
+                required={false}
+              />
+            </div>
+          </fieldset>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setRows((items) => [...items, { key: next }]);
+            setNext((value) => value + 1);
+          }}
+        >
+          <Plus />
+          Add medicine
+        </Button>
+        <div className="mt-3">
+          <TextArea
+            label="Doctor's notes"
+            name="notes"
+            placeholder="e.g. Home-care advice, precautions, or follow-up instructions"
+          />
+        </div>
+      </section>
+      <Message state={state} />
+      <div className="sticky bottom-4 rounded-xl border bg-white/95 p-3 shadow-lg backdrop-blur">
+        <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
+          {pending ? "Saving all data…" : "Save consultation data"}
+        </Button>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Saves clinical details, selected treatment, and prescription draft
+          together.
+        </p>
+      </div>
+    </form>
+  );
 }
 
-export function PrescriptionForm({appointmentId}:{appointmentId:string}) {
-  const [state,action,pending]=useActionState(createPrescriptionAction,{});
-  const [rows,setRows]=useState<MedicineRow[]>([{key:1}]); const [next,setNext]=useState(2);
-  const move=(index:number,direction:number)=>setRows(current=>{const target=index+direction;if(target<0||target>=current.length)return current;const copy=[...current];[copy[index],copy[target]]=[copy[target],copy[index]];return copy;});
-  return <form action={action} className="space-y-4"><input type="hidden" name="appointmentId" value={appointmentId}/>{rows.map((row,index)=><fieldset key={row.key} className="break-inside-avoid rounded-xl border bg-[#fafcfb] p-4"><input type="hidden" name="strength" value=""/><input type="hidden" name="route" value="Oral"/><input type="hidden" name="quantity" value=""/><div className="mb-3 flex items-center justify-between"><legend className="text-sm font-semibold">Medicine {index+1}</legend><div className="flex gap-1"><Button type="button" variant="ghost" size="icon-sm" aria-label="Move medicine up" disabled={!index} onClick={()=>move(index,-1)}><ArrowUp/></Button><Button type="button" variant="ghost" size="icon-sm" aria-label="Move medicine down" disabled={index===rows.length-1} onClick={()=>move(index,1)}><ArrowDown/></Button>{rows.length>1&&<Button type="button" variant="ghost" size="icon-sm" aria-label="Remove medicine" onClick={()=>setRows(items=>items.filter(item=>item.key!==row.key))}><Trash2/></Button>}</div></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><div className="sm:col-span-2 lg:col-span-1"><Field label="Medicine & strength" name="medicine" placeholder="Amoxicillin 500 mg"/></div><Field label="Dosage" name="dosage" placeholder="1 tablet"/><Field label="English timing" name="frequency" placeholder="Morning and night"/><Field label="Timing code" name="timing" placeholder="1-0-1"/><Field label="Duration" name="duration" placeholder="5 days"/><Field label="Instructions" name="instructions" placeholder="After meals"/></div></fieldset>)}<Button type="button" variant="outline" onClick={()=>{setRows(items=>[...items,{key:next}]);setNext(value=>value+1);}}><Plus/>Add another medicine</Button><TextArea label="Doctor's notes (optional)" name="notes"/><div className="max-w-xs"><Field label="Follow-up date (optional)" name="followUpDate" type="date" required={false}/></div><Message state={state}/><div className="flex flex-wrap gap-3"><Button type="submit" name="intent" value="draft" variant="outline" disabled={pending}>Save draft</Button><Button type="submit" name="intent" value="finalize" disabled={pending}>Finalize & preview</Button></div></form>;
+export function PrescriptionForm({ appointmentId }: { appointmentId: string }) {
+  const [state, action, pending] = useActionState(createPrescriptionAction, {});
+  const [rows, setRows] = useState<MedicineRow[]>([{ key: 1 }]);
+  const [next, setNext] = useState(2);
+  const move = (index: number, direction: number) =>
+    setRows((current) => {
+      const target = index + direction;
+      if (target < 0 || target >= current.length) return current;
+      const copy = [...current];
+      [copy[index], copy[target]] = [copy[target], copy[index]];
+      return copy;
+    });
+  return (
+    <form action={action} className="space-y-4">
+      <input type="hidden" name="appointmentId" value={appointmentId} />
+      {rows.map((row, index) => (
+        <fieldset
+          key={row.key}
+          className="break-inside-avoid rounded-xl border bg-[#fafcfb] p-4"
+        >
+          <input type="hidden" name="strength" value="" />
+          <input type="hidden" name="route" value="Oral" />
+          <input type="hidden" name="quantity" value="" />
+          <div className="mb-3 flex items-center justify-between">
+            <legend className="text-sm font-semibold">
+              Medicine {index + 1}
+            </legend>
+            <div className="flex gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Move medicine up"
+                disabled={!index}
+                onClick={() => move(index, -1)}
+              >
+                <ArrowUp />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Move medicine down"
+                disabled={index === rows.length - 1}
+                onClick={() => move(index, 1)}
+              >
+                <ArrowDown />
+              </Button>
+              {rows.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Remove medicine"
+                  onClick={() =>
+                    setRows((items) =>
+                      items.filter((item) => item.key !== row.key),
+                    )
+                  }
+                >
+                  <Trash2 />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="sm:col-span-2 lg:col-span-1">
+              <Field
+                label="Medicine & strength"
+                name="medicine"
+                placeholder="Amoxicillin 500 mg"
+              />
+            </div>
+            <Field label="Dosage" name="dosage" placeholder="1 tablet" />
+            <Field
+              label="English timing"
+              name="frequency"
+              placeholder="Morning and night"
+            />
+            <Field label="Timing code" name="timing" placeholder="1-0-1" />
+            <Field label="Duration" name="duration" placeholder="5 days" />
+            <Field
+              label="Instructions"
+              name="instructions"
+              placeholder="After meals"
+            />
+          </div>
+        </fieldset>
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => {
+          setRows((items) => [...items, { key: next }]);
+          setNext((value) => value + 1);
+        }}
+      >
+        <Plus />
+        Add another medicine
+      </Button>
+      <TextArea label="Doctor's notes (optional)" name="notes" />
+      <div className="max-w-xs">
+        <Field
+          label="Follow-up date (optional)"
+          name="followUpDate"
+          type="date"
+          required={false}
+        />
+      </div>
+      <Message state={state} />
+      <div className="flex flex-wrap gap-3">
+        <Button
+          type="submit"
+          name="intent"
+          value="draft"
+          variant="outline"
+          disabled={pending}
+        >
+          Save draft
+        </Button>
+        <Button type="submit" name="intent" value="finalize" disabled={pending}>
+          Finalize & preview
+        </Button>
+      </div>
+    </form>
+  );
 }
 
-function Field({label,name,value,placeholder,type="text",required=true}:{label:string;name:string;value?:string|null;placeholder?:string;type?:string;required?:boolean}) { const id=useId(); return <div className="space-y-1.5"><Label htmlFor={id}>{label}</Label><Input id={id} name={name} type={type} defaultValue={value||""} placeholder={placeholder} required={required} maxLength={240} className="h-9"/></div>; }
-function TextArea({label,name,value,placeholder}:{label:string;name:string;value?:string|null;placeholder?:string}) { const id=useId(); return <div className="space-y-1.5"><Label htmlFor={id}>{label}</Label><textarea id={id} name={name} defaultValue={value||""} placeholder={placeholder} rows={2} maxLength={3000} className="w-full rounded-lg border bg-white p-2.5 text-sm placeholder:text-muted-foreground"/></div>; }
+function Field({
+  label,
+  name,
+  value,
+  placeholder,
+  type = "text",
+  required = true,
+}: {
+  label: string;
+  name: string;
+  value?: string | null;
+  placeholder?: string;
+  type?: string;
+  required?: boolean;
+}) {
+  const id = useId();
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        name={name}
+        type={type}
+        defaultValue={value || ""}
+        placeholder={placeholder}
+        required={required}
+        maxLength={240}
+        className="h-9"
+      />
+    </div>
+  );
+}
+function TextArea({
+  label,
+  name,
+  value,
+  placeholder,
+}: {
+  label: string;
+  name: string;
+  value?: string | null;
+  placeholder?: string;
+}) {
+  const id = useId();
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <textarea
+        id={id}
+        name={name}
+        defaultValue={value || ""}
+        placeholder={placeholder}
+        rows={2}
+        maxLength={3000}
+        className="w-full rounded-lg border bg-white p-2.5 text-sm placeholder:text-muted-foreground"
+      />
+    </div>
+  );
+}
+
+function ConsentFields({ consultation }: { consultation?: Consultation | null }) {
+  const id = useId();
+  return (
+    <div className="mt-4 rounded-xl border bg-[#fafcfb] p-4">
+      <label className="flex items-start gap-3 text-sm font-medium">
+        <input className="mt-1" type="checkbox" name="patientConsent" value="yes" defaultChecked={consultation?.patientConsent} />
+        The patient or guardian has understood the proposed treatment and given consent.
+      </label>
+      <div className="mt-3">
+        <Label htmlFor={id}>Consent notes <span className="font-normal text-muted-foreground">(optional)</span></Label>
+        <textarea id={id} name="consentNotes" defaultValue={consultation?.consentNotes || ""} rows={2} maxLength={500} placeholder="e.g. Verbal consent given; guardian name if applicable" className="mt-1.5 w-full rounded-lg border bg-white p-2.5 text-sm placeholder:text-muted-foreground" />
+      </div>
+    </div>
+  );
+}

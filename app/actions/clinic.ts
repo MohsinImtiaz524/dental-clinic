@@ -20,8 +20,17 @@ export async function createPatientAction(_: ClinicFormState, form: FormData): P
   await requireUser();
   const name = field(form, "name");
   const phone = field(form, "phone");
+  const ageValue = field(form, "age");
+  const weightValue = field(form, "weightKg");
+  const gender = field(form, "gender");
+  const address = field(form, "address");
   if (name.length < 2 || name.length > 100) return { error: "Enter a patient name between 2 and 100 characters." };
   if (phone && (!/^[+\d\s()-]{7,25}$/.test(phone) || !/\d/.test(phone))) return { error: "Enter a valid phone number or leave it blank." };
+  const age = ageValue ? Number(ageValue) : null;
+  const weightKg = weightValue ? Number(weightValue) : null;
+  if (age !== null && (!Number.isInteger(age) || age < 0 || age > 130)) return { error: "Enter an age between 0 and 130." };
+  if (weightKg !== null && (!Number.isFinite(weightKg) || weightKg <= 0 || weightKg > 500)) return { error: "Enter a valid weight up to 500 kg." };
+  if (gender.length > 40 || address.length > 500) return { error: "Gender or address is too long." };
   const identityKey = patientIdentityKey(name, phone);
   let id: string;
   let existing = false;
@@ -31,7 +40,7 @@ export async function createPatientAction(_: ClinicFormState, form: FormData): P
       id = duplicate.id;
       existing = true;
     } else {
-      const patient = await db.patient.create({ data: { name, phone: phone || null, identityKey } });
+      const patient = await db.patient.create({ data: { name, phone: phone || null, age, weightKg, gender: gender || null, address: address || null, identityKey } });
       id = patient.id;
     }
   } catch {

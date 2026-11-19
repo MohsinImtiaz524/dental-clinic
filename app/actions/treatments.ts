@@ -81,7 +81,8 @@ export async function createPrescriptionAction(_: TreatmentFormState, form: Form
 export async function saveConsultationAction(_: TreatmentFormState, form: FormData): Promise<TreatmentFormState> {
   await requireUser(); const appointmentId=field(form,"appointmentId");
   const appointment=await db.appointment.findUnique({where:{id:appointmentId},select:{id:true}}); if(!appointment)return{error:"Consultation not found."};
-  const data={medicalHistory:field(form,"medicalHistory")||null,allergies:field(form,"allergies")||null,currentMedications:field(form,"currentMedications")||null,dentalHistory:field(form,"dentalHistory")||null,clinicalFindings:field(form,"clinicalFindings")||null,toothNumbers:field(form,"toothNumbers")||null,diagnosis:field(form,"diagnosis")||null,procedures:field(form,"procedures")||null,referralSpecialist:field(form,"referralSpecialist")||null,referralReason:field(form,"referralReason")||null,referralInstructions:field(form,"referralInstructions")||null};
+  const patientConsent=field(form,"patientConsent")==="yes";
+  const data={medicalHistory:field(form,"medicalHistory")||null,allergies:field(form,"allergies")||null,currentMedications:field(form,"currentMedications")||null,dentalHistory:field(form,"dentalHistory")||null,clinicalFindings:field(form,"clinicalFindings")||null,toothNumbers:field(form,"toothNumbers")||null,diagnosis:field(form,"diagnosis")||null,procedures:field(form,"procedures")||null,referralSpecialist:field(form,"referralSpecialist")||null,referralReason:field(form,"referralReason")||null,referralInstructions:field(form,"referralInstructions")||null,patientConsent,consentNotes:field(form,"consentNotes")||null,consentedAt:patientConsent?new Date():null};
   try{await db.consultation.upsert({where:{appointmentId},create:{appointmentId,...data},update:data});}catch{return{error:"Unable to save consultation findings."};}
   revalidatePath(`/appointments/${appointmentId}/consultation`); return {success:"Consultation findings saved."};
 }
@@ -92,7 +93,8 @@ export async function saveConsultationPanelAction(_: TreatmentFormState, form: F
   const medicine=form.getAll("medicine").map(String); const dosage=form.getAll("dosage").map(String); const frequency=form.getAll("frequency").map(String); const timing=form.getAll("timing").map(String); const duration=form.getAll("duration").map(String); const instructions=form.getAll("instructions").map(String);
   const items=medicine.map((name,index)=>({medicine:name.trim(),strength:"",route:"Oral",quantity:"",dosage:(dosage[index]||"").trim(),frequency:(frequency[index]||"").trim(),timing:(timing[index]||"").trim(),duration:(duration[index]||"").trim(),instructions:(instructions[index]||"").trim(),sortOrder:index})).filter(item=>Object.values(item).some(value=>typeof value==="string"&&value.trim()&&value!=="Oral"));
   if(items.some(item=>!item.medicine))return{error:"Enter a medicine name for each medicine row you use."};
-  const clinical={medicalHistory:field(form,"medicalHistory")||null,clinicalFindings:field(form,"clinicalFindings")||null,diagnosis:field(form,"diagnosis")||null,procedures:field(form,"procedures")||null};
+  const patientConsent=field(form,"patientConsent")==="yes";
+  const clinical={medicalHistory:field(form,"medicalHistory")||null,clinicalFindings:field(form,"clinicalFindings")||null,diagnosis:field(form,"diagnosis")||null,procedures:field(form,"procedures")||null,patientConsent,consentNotes:field(form,"consentNotes")||null,consentedAt:patientConsent?new Date():null};
   const treatmentId=field(form,"treatmentId"); const treatmentNotes=field(form,"treatmentNotes");
   try {
     const [clinic,doctor]=await Promise.all([db.clinicSettings.findUnique({where:{singleton:"clinic"}}),db.doctorProfile.findUnique({where:{singleton:"doctor"}})]);
