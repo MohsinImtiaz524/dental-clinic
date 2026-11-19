@@ -596,7 +596,7 @@ async function optimizePrintImage(file: File) {
       image.src = objectUrl;
     });
   }
-  const scale = Math.min(1, 1800 / Math.max(source.width, source.height));
+  const scale = Math.min(1, 2200 / Math.max(source.width, source.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(source.width * scale));
   canvas.height = Math.max(1, Math.round(source.height * scale));
@@ -604,16 +604,16 @@ async function optimizePrintImage(file: File) {
   if (!context) throw new Error("This browser could not prepare the image.");
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
-  context.filter = "contrast(1.16) brightness(1.04) saturate(1.06)";
+  context.filter = "contrast(1.25) brightness(1.05) saturate(1.02)";
   context.drawImage(source, 0, 0, canvas.width, canvas.height);
   if (source instanceof ImageBitmap) source.close();
   if (objectUrl) URL.revokeObjectURL(objectUrl);
   let blob: Blob | null = null;
-  for (const quality of [0.88, 0.82, 0.74]) {
+  for (const quality of [0.94, 0.9, 0.84, 0.76]) {
     blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
-    if (blob && blob.size <= 2 * 1024 * 1024) break;
+    if (blob && blob.size <= 1.2 * 1024 * 1024) break;
   }
-  if (!blob || blob.size > 2 * 1024 * 1024) throw new Error("This image could not be reduced below 2 MB. Please choose a smaller image.");
+  if (!blob || blob.size > 1.2 * 1024 * 1024) throw new Error("This image could not be prepared clearly below 1.2 MB. Please choose a smaller image.");
   return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", { type: "image/webp", lastModified: Date.now() });
 }
 

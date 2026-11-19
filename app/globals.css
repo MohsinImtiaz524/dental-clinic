@@ -80,6 +80,10 @@
 @media print{.rx-logo-center{min-width:132px}.rx-logo{width:132px;height:132px;max-width:132px;max-height:132px}}
 .rx-medical-row span{font-size:14px;font-weight:700}.rx-medical-row b{font-size:14px;font-weight:500}.rx-medical-narrative h3{font-size:14px;font-weight:700}.rx-medical-narrative p{font-size:14px;line-height:1.35}
 @media print{.rx-medical-row span{font-size:14px;font-weight:700}.rx-medical-row b{font-size:14px;font-weight:500}.rx-medical-narrative h3{font-size:14px;font-weight:700}.rx-medical-narrative p{font-size:14px;line-height:1.35}}
+.rx-medical-row span,.rx-medical-row b{font-size:10px}
+@media print{.rx-medical-row span,.rx-medical-row b{font-size:10px}}
+.rx-medical-sidebar h2,.rx-sidebar-facilities h2,.rx-medical-narrative h3{font-size:12px}
+@media print{.rx-medical-sidebar h2,.rx-sidebar-facilities h2,.rx-medical-narrative h3{font-size:12px}}
 
 :root {
   --background: oklch(1 0 0);
