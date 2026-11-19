@@ -108,6 +108,10 @@ export function TreatmentRecordForm({
 
 type Consultation = {
   medicalHistory?: string | null;
+  bloodPressure?: string | null;
+  bloodSugar?: string | null;
+  liverDisease?: string | null;
+  heartDisease?: string | null;
   presentingComplaints?: string | null;
   allergies?: string | null;
   currentMedications?: string | null;
@@ -243,6 +247,10 @@ export function ConsultationPanelForm({
             value={consultation?.medicalHistory}
             placeholder="e.g. Diabetes, hypertension, allergies, or relevant medicines"
           />
+          <Field label="Blood pressure" name="bloodPressure" value={consultation?.bloodPressure} placeholder="e.g. 120/80 mmHg" required={false} />
+          <Field label="Blood sugar" name="bloodSugar" value={consultation?.bloodSugar} placeholder="e.g. 110 mg/dL" required={false} />
+          <Field label="Liver disease" name="liverDisease" value={consultation?.liverDisease} placeholder="e.g. None" required={false} />
+          <Field label="Heart disease" name="heartDisease" value={consultation?.heartDisease} placeholder="e.g. None" required={false} />
           <TextArea
             label="Clinical findings"
             name="clinicalFindings"
