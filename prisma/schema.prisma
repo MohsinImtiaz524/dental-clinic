@@ -88,6 +88,7 @@ model Consultation {
   appointmentId       String @unique
   appointment         Appointment @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
   medicalHistory      String?
+  presentingComplaints String?
   allergies           String?
   currentMedications  String?
   dentalHistory       String?
@@ -121,6 +122,7 @@ model ClinicSettings {
   phcLicenseNumber   String?
   appointmentContact String?
   emergencyContact   String?
+  facilities         String?
   updatedAt          DateTime @updatedAt
 }
 
@@ -184,6 +186,11 @@ model Prescription {
   finalizedAt   DateTime?
   profileSnapshot String?
   followUpDate  DateTime?
+  image1DataUrl String?
+  image2DataUrl String?
+  image3DataUrl String?
+  imageWidthMm  Float @default(30)
+  imageHeightMm Float @default(59.4)
   createdAt     DateTime @default(now())
   items         PrescriptionItem[]
   @@index([appointmentId])

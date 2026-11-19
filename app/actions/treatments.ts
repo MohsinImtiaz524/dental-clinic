@@ -9,6 +9,25 @@ import { medicineSchedule, parsePrescriptionItems } from "@/lib/prescriptions";
 export type TreatmentFormState = { error?: string; success?: string };
 const field = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
 
+async function prescriptionImage(form: FormData, key: string) {
+  const file = form.get(key);
+  if (!(file instanceof File) || !file.size) return undefined;
+  if (file.size > 2 * 1024 * 1024 || !["image/png", "image/jpeg", "image/webp"].includes(file.type)) throw new Error("Each print image must be PNG, JPG, or WebP and no larger than 2 MB.");
+  return `data:${file.type};base64,${Buffer.from(await file.arrayBuffer()).toString("base64")}`;
+}
+
+function uploadError(error: unknown, fallback: string) {
+  if (error instanceof Error && (error.message.startsWith("Each print image") || error.message.startsWith("Image width"))) return error.message;
+  return fallback;
+}
+
+function imageDimensions(form: FormData) {
+  const width = Number(field(form, "imageWidthMm") || 30);
+  const height = Number(field(form, "imageHeightMm") || 59.4);
+  if (!Number.isFinite(width) || width < 15 || width > 70 || !Number.isFinite(height) || height < 15 || height > 120) throw new Error("Image width must be 15–70 mm and height must be 15–120 mm.");
+  return { imageWidthMm: width, imageHeightMm: height };
+}
+
 function refreshRecords(patientId?: string, appointmentId?: string) {
   revalidatePath("/treatments");
   revalidatePath("/patients");
@@ -71,6 +90,8 @@ export async function createPrescriptionAction(_: TreatmentFormState, form: Form
   if ("error" in parsed) return { error: parsed.error };
   let prescriptionId: string;
   try {
+    const [image1DataUrl, image2DataUrl, image3DataUrl] = await Promise.all([prescriptionImage(form,"image1"),prescriptionImage(form,"image2"),prescriptionImage(form,"image3")]);
+    const dimensions = imageDimensions(form);
     const appointment = await db.appointment.findUnique({ where: { id: appointmentId }, select: { patientId: true } });
     if (!appointment) return { error: "This consultation no longer exists." };
     const [clinic, doctor] = await Promise.all([db.clinicSettings.findUnique({ where: { singleton: "clinic" } }), db.doctorProfile.findUnique({ where: { singleton: "doctor" } })]);
@@ -79,14 +100,14 @@ export async function createPrescriptionAction(_: TreatmentFormState, form: Form
     const followUpDate = followUp ? new Date(`${followUp}T12:00:00+05:00`) : null;
     const prescription = await db.$transaction(async tx => tx.prescription.create({
       data: {
-        appointmentId, patientId: appointment.patientId, notes: notes || null, status: intent, finalizedAt: intent === "FINALIZED" ? new Date() : null, followUpDate,
+        appointmentId, patientId: appointment.patientId, notes: notes || null, status: intent, finalizedAt: intent === "FINALIZED" ? new Date() : null, followUpDate, image1DataUrl, image2DataUrl, image3DataUrl, ...dimensions,
         profileSnapshot: JSON.stringify({ clinic, doctor }),
         items: { create: parsed.items.map((item, sortOrder) => ({ ...item, sortOrder })) },
       }, select: { id: true },
     }));
     prescriptionId = prescription.id;
     refreshRecords(appointment.patientId, appointmentId);
-  } catch { return { error: "Unable to save the prescription. Nothing was partially saved; please try again." }; }
+  } catch (error) { return { error: uploadError(error, "Unable to save the prescription. Nothing was partially saved; please try again.") }; }
   redirect(`/prescriptions/${prescriptionId}`);
 }
 
@@ -94,7 +115,7 @@ export async function saveConsultationAction(_: TreatmentFormState, form: FormDa
   await requireUser(); const appointmentId=field(form,"appointmentId");
   const appointment=await db.appointment.findUnique({where:{id:appointmentId},select:{id:true}}); if(!appointment)return{error:"Consultation not found."};
   const patientConsent=field(form,"patientConsent")==="yes";
-  const data={medicalHistory:field(form,"medicalHistory")||null,allergies:field(form,"allergies")||null,currentMedications:field(form,"currentMedications")||null,dentalHistory:field(form,"dentalHistory")||null,clinicalFindings:field(form,"clinicalFindings")||null,toothNumbers:field(form,"toothNumbers")||null,diagnosis:field(form,"diagnosis")||null,procedures:field(form,"procedures")||null,referralSpecialist:field(form,"referralSpecialist")||null,referralReason:field(form,"referralReason")||null,referralInstructions:field(form,"referralInstructions")||null,patientConsent,consentNotes:field(form,"consentNotes")||null,consentedAt:patientConsent?new Date():null};
+  const data={presentingComplaints:field(form,"presentingComplaints")||null,medicalHistory:field(form,"medicalHistory")||null,allergies:field(form,"allergies")||null,clinicalFindings:field(form,"clinicalFindings")||null,diagnosis:field(form,"diagnosis")||null,procedures:field(form,"procedures")||null,referralSpecialist:field(form,"referralSpecialist")||null,referralReason:field(form,"referralReason")||null,referralInstructions:field(form,"referralInstructions")||null,patientConsent,consentNotes:field(form,"consentNotes")||null,consentedAt:patientConsent?new Date():null};
   try{await db.consultation.upsert({where:{appointmentId},create:{appointmentId,...data},update:data});}catch{return{error:"Unable to save consultation findings."};}
   revalidatePath(`/appointments/${appointmentId}/consultation`); return {success:"Consultation findings saved."};
 }
@@ -107,17 +128,32 @@ export async function saveConsultationPanelAction(_: TreatmentFormState, form: F
   if(items.some(item=>!item.medicine))return{error:"Enter a medicine name for each medicine row you use."};
   if(items.some(item=>!item.frequency))return{error:"Choose a valid schedule for every medicine row you use."};
   const patientConsent=field(form,"patientConsent")==="yes";
-  const clinical={medicalHistory:field(form,"medicalHistory")||null,clinicalFindings:field(form,"clinicalFindings")||null,diagnosis:field(form,"diagnosis")||null,procedures:field(form,"procedures")||null,patientConsent,consentNotes:field(form,"consentNotes")||null,consentedAt:patientConsent?new Date():null};
+  const clinical={presentingComplaints:field(form,"presentingComplaints")||null,medicalHistory:field(form,"medicalHistory")||null,clinicalFindings:field(form,"clinicalFindings")||null,diagnosis:field(form,"diagnosis")||null,procedures:field(form,"procedures")||null,patientConsent,consentNotes:field(form,"consentNotes")||null,consentedAt:patientConsent?new Date():null};
   const treatmentId=field(form,"treatmentId"); const treatmentNotes=field(form,"treatmentNotes");
+  const patientAgeValue=field(form,"patientAge"); const patientWeightValue=field(form,"patientWeightKg"); const patientAddress=field(form,"patientAddress");
+  const patientAge=patientAgeValue?Number(patientAgeValue):null; const patientWeightKg=patientWeightValue?Number(patientWeightValue):null;
+  if(patientAge!==null&&(!Number.isInteger(patientAge)||patientAge<0||patientAge>130))return{error:"Enter a patient age between 0 and 130."};
+  if(patientWeightKg!==null&&(!Number.isFinite(patientWeightKg)||patientWeightKg<=0||patientWeightKg>500))return{error:"Enter a valid patient weight up to 500 kg."};
+  if(patientAddress.length>500)return{error:"Patient address must be 500 characters or fewer."};
   try {
+    const [image1DataUrl,image2DataUrl,image3DataUrl]=await Promise.all([prescriptionImage(form,"image1"),prescriptionImage(form,"image2"),prescriptionImage(form,"image3")]);
+    const dimensions=imageDimensions(form);
     const [clinic,doctor]=await Promise.all([db.clinicSettings.findUnique({where:{singleton:"clinic"}}),db.doctorProfile.findUnique({where:{singleton:"doctor"}})]);
     await db.$transaction(async tx=>{
+      await tx.patient.update({where:{id:appointment.patientId},data:{age:patientAge,weightKg:patientWeightKg,address:patientAddress||null}});
       await tx.consultation.upsert({where:{appointmentId},create:{appointmentId,...clinical},update:clinical});
       let linkedTreatmentId=treatmentId;
       if(!linkedTreatmentId&&clinical.procedures){const catalog=await tx.treatmentCatalog.findMany({where:{active:true},select:{id:true,name:true}});const procedureText=clinical.procedures.toLocaleLowerCase();linkedTreatmentId=catalog.find(item=>procedureText.includes(item.name.toLocaleLowerCase()))?.id||"";}
       if(linkedTreatmentId){const valid=await tx.treatmentCatalog.findUnique({where:{id:linkedTreatmentId},select:{active:true}});if(!valid?.active)throw new Error("invalid treatment");const existing=await tx.treatmentRecord.findFirst({where:{appointmentId,treatmentId:linkedTreatmentId},select:{id:true}});if(existing)await tx.treatmentRecord.update({where:{id:existing.id},data:{notes:treatmentNotes||clinical.procedures||null}});else await tx.treatmentRecord.create({data:{appointmentId,patientId:appointment.patientId,treatmentId:linkedTreatmentId,notes:treatmentNotes||clinical.procedures||null}});}
-      if(items.length){const draft=await tx.prescription.findFirst({where:{appointmentId,status:"DRAFT"},select:{id:true}});if(draft){await tx.prescriptionItem.deleteMany({where:{prescriptionId:draft.id}});await tx.prescription.update({where:{id:draft.id},data:{notes:null,profileSnapshot:JSON.stringify({clinic,doctor}),items:{create:items}}});}else await tx.prescription.create({data:{appointmentId,patientId:appointment.patientId,status:"DRAFT",notes:null,profileSnapshot:JSON.stringify({clinic,doctor}),items:{create:items}}});}
+      const hasImages=Boolean(image1DataUrl||image2DataUrl||image3DataUrl);
+      if(items.length||hasImages){
+        const draft=await tx.prescription.findFirst({where:{appointmentId,status:"DRAFT"},select:{id:true}});
+        if(draft){
+          if(items.length)await tx.prescriptionItem.deleteMany({where:{prescriptionId:draft.id}});
+          await tx.prescription.update({where:{id:draft.id},data:{notes:null,profileSnapshot:JSON.stringify({clinic,doctor}),...dimensions,...(image1DataUrl?{image1DataUrl}:{}),...(image2DataUrl?{image2DataUrl}:{}),...(image3DataUrl?{image3DataUrl}:{}),...(items.length?{items:{create:items}}:{})}});
+        }else await tx.prescription.create({data:{appointmentId,patientId:appointment.patientId,status:"DRAFT",notes:null,profileSnapshot:JSON.stringify({clinic,doctor}),image1DataUrl,image2DataUrl,image3DataUrl,...dimensions,...(items.length?{items:{create:items}}:{})}});
+      }
     });
-  } catch { return {error:"Unable to save the consultation data. Nothing was partially saved."}; }
+  } catch (error) { return {error:uploadError(error,"Unable to save the consultation data. Nothing was partially saved.")}; }
   refreshRecords(appointment.patientId,appointmentId); redirect(`/appointments/${appointmentId}/consultation?saved=all`);
 }

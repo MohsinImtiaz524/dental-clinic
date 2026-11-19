@@ -108,6 +108,7 @@ export function TreatmentRecordForm({
 
 type Consultation = {
   medicalHistory?: string | null;
+  presentingComplaints?: string | null;
   allergies?: string | null;
   currentMedications?: string | null;
   dentalHistory?: string | null;
@@ -134,6 +135,11 @@ export function ConsultationForm({
       <input type="hidden" name="appointmentId" value={appointmentId} />
       <div className="grid gap-4 md:grid-cols-2">
         <TextArea
+          label="Presenting complaints"
+          name="presentingComplaints"
+          value={consultation?.presentingComplaints}
+        />
+        <TextArea
           label="History"
           name="medicalHistory"
           value={consultation?.medicalHistory}
@@ -144,24 +150,9 @@ export function ConsultationForm({
           value={consultation?.allergies}
         />
         <TextArea
-          label="Current medications"
-          name="currentMedications"
-          value={consultation?.currentMedications}
-        />
-        <TextArea
-          label="Dental history"
-          name="dentalHistory"
-          value={consultation?.dentalHistory}
-        />
-        <TextArea
           label="Clinical findings"
           name="clinicalFindings"
           value={consultation?.clinicalFindings}
-        />
-        <Field
-          label="Affected tooth numbers"
-          name="toothNumbers"
-          value={consultation?.toothNumbers}
         />
         <TextArea
           label="Diagnosis"
@@ -204,11 +195,13 @@ export function ConsultationForm({
 type MedicineRow = { key: number };
 export function ConsultationPanelForm({
   appointmentId,
+  patient,
   consultation,
   treatments,
   medicines,
 }: {
   appointmentId: string;
+  patient: { age: number | null; weightKg: number | null; address: string | null };
   consultation?: Consultation | null;
   treatments: { id: string; name: string }[];
   medicines: { id: string; name: string }[];
@@ -223,6 +216,14 @@ export function ConsultationPanelForm({
     <form action={action} className="space-y-6">
       <input type="hidden" name="appointmentId" value={appointmentId} />
       <section>
+        <h2 className="mb-3 text-base font-semibold">Patient details <span className="text-xs font-normal text-muted-foreground">(shown on prescription)</span></h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Age" name="patientAge" value={patient.age?.toString()} type="number" required={false} />
+          <Field label="Weight (kg)" name="patientWeightKg" value={patient.weightKg?.toString()} type="number" required={false} />
+          <div className="sm:col-span-2"><TextArea label="Patient address" name="patientAddress" value={patient.address} placeholder="House, street, area and city" /></div>
+        </div>
+      </section>
+      <section className="border-t pt-5">
         <h2 className="mb-3 text-base font-semibold">
           Clinical details{" "}
           <span className="text-xs font-normal text-muted-foreground">
@@ -230,6 +231,12 @@ export function ConsultationPanelForm({
           </span>
         </h2>
         <div className="grid gap-3 md:grid-cols-2">
+          <TextArea
+            label="Presenting complaints"
+            name="presentingComplaints"
+            value={consultation?.presentingComplaints}
+            placeholder="e.g. Pain in lower-right tooth for three days"
+          />
           <TextArea
             label="History"
             name="medicalHistory"
@@ -357,6 +364,7 @@ export function ConsultationPanelForm({
           <Plus />
           Add medicine
         </Button>
+        <PrintImagesFields />
       </section>
       <Message state={state} />
       <div className="sticky bottom-4 rounded-xl border bg-white/95 p-3 shadow-lg backdrop-blur">
@@ -462,6 +470,7 @@ export function PrescriptionForm({ appointmentId, medicines = [] }: { appointmen
         <Plus />
         Add another medicine
       </Button>
+      <PrintImagesFields />
       <div className="max-w-xs">
         <Field
           label="Follow-up date (optional)"
@@ -561,6 +570,59 @@ function ScheduleField({ required = true }: { required?: boolean }) {
   const [selected, setSelected] = useState("BD");
   const schedule = MEDICINE_SCHEDULES.find(item => item.code === selected);
   return <fieldset className="space-y-2"><legend id={id} className="text-sm font-medium">Schedule</legend><input type="hidden" name="scheduleCode" value={selected} required={required}/><div role="group" aria-labelledby={id} className="flex flex-wrap gap-2">{MEDICINE_SCHEDULES.map(item => <button key={item.code} type="button" aria-pressed={selected === item.code} onClick={() => setSelected(item.code)} className="min-w-11 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors aria-pressed:border-[#176452] aria-pressed:bg-[#176452] aria-pressed:text-white">{item.code}</button>)}</div><p className="text-sm font-medium text-[#176452]" dir="auto">{schedule?.urdu}</p></fieldset>;
+}
+
+async function optimizePrintImage(file: File) {
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) throw new Error("Choose a PNG, JPG, or WebP image.");
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1800 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("This browser could not prepare the image.");
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.filter = "contrast(1.16) brightness(1.04) saturate(1.06)";
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  let blob: Blob | null = null;
+  for (const quality of [0.88, 0.82, 0.74]) {
+    blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+    if (blob && blob.size <= 2 * 1024 * 1024) break;
+  }
+  if (!blob || blob.size > 2 * 1024 * 1024) throw new Error("This image could not be reduced below 2 MB. Please choose a smaller image.");
+  return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", { type: "image/webp", lastModified: Date.now() });
+}
+
+function PrintImageInput({ number }: { number: number }) {
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+  return <div className="space-y-1.5"><Label htmlFor={`prescription-image-${number}`}>Image {number}</Label><Input id={`prescription-image-${number}`} name={`image${number}`} type="file" accept="image/png,image/jpeg,image/webp" className="h-auto py-2" onChange={async event => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    setError("");
+    if (!file) { setStatus(""); return; }
+    input.setCustomValidity("Please wait while the image is prepared.");
+    setStatus("Preparing image…");
+    try {
+      const optimized = await optimizePrintImage(file);
+      const files = new DataTransfer();
+      files.items.add(optimized);
+      input.files = files.files;
+      input.setCustomValidity("");
+      setStatus(`Enhanced & ready · ${Math.max(1, Math.round(optimized.size / 1024))} KB`);
+    } catch (reason) {
+      input.value = "";
+      input.setCustomValidity("");
+      setStatus("");
+      setError(reason instanceof Error ? reason.message : "Unable to prepare this image.");
+    }
+  }}/>{status && <p className="text-xs font-medium text-emerald-700">{status}</p>}{error && <p role="alert" className="text-xs text-red-700">{error}</p>}</div>;
+}
+
+function PrintImagesFields() {
+  return <div className="mt-5 rounded-xl border bg-[#fafcfb] p-4"><h3 className="text-sm font-semibold">Prescription print images <span className="font-normal text-muted-foreground">(optional, up to 3)</span></h3><p className="mt-1 text-xs text-muted-foreground">PNG, JPG, or WebP. Large images are automatically prepared for reliable saving and printing.</p><div className="mt-4 grid gap-3 sm:grid-cols-3">{[1,2,3].map(number => <PrintImageInput number={number} key={number}/>)}</div><div className="mt-4 grid max-w-md grid-cols-2 gap-3"><div className="space-y-1.5"><Label htmlFor="imageWidthMm">Print width (mm)</Label><Input id="imageWidthMm" name="imageWidthMm" type="number" min="15" max="70" step="0.1" defaultValue="30"/></div><div className="space-y-1.5"><Label htmlFor="imageHeightMm">Print height (mm)</Label><Input id="imageHeightMm" name="imageHeightMm" type="number" min="15" max="120" step="0.1" defaultValue="59.4"/></div></div></div>;
 }
 
 function ConsentFields({ consultation }: { consultation?: Consultation | null }) {
