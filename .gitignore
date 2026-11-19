@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-e2e/
 /out/
 
 # production
@@ -39,3 +40,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/lib/generated/prisma
+/.npm-cache/
+/.local/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+/test-results/
+/playwright-report/
+!.env.example

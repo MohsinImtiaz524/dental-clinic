@@ -1,0 +1,56 @@
+import { test, expect } from "@playwright/test";
+import { db } from "../../lib/db";
+import { hashPassword } from "../../lib/password";
+
+test.beforeAll(async () => {
+  await db.prescriptionItem.deleteMany();
+  await db.prescription.deleteMany();
+  await db.treatmentRecord.deleteMany();
+  await db.treatmentCatalog.deleteMany();
+  await db.consultation.deleteMany();
+  await db.appointment.deleteMany();
+  await db.patient.deleteMany();
+  await db.user.deleteMany();
+  await db.user.create({ data: { name: "Clinic Tester", email: "prescriptions@example.test", passwordHash: await hashPassword("Prescription test password!") } });
+  await db.clinicSettings.upsert({ where: { singleton: "clinic" }, create: { singleton: "clinic", clinicName: "Test Dental Clinic" }, update: { clinicName: "Test Dental Clinic" } });
+  await db.doctorProfile.upsert({ where: { singleton: "doctor" }, create: { singleton: "doctor", fullName: "Test Dentist" }, update: { fullName: "Test Dentist" } });
+});
+
+test("appointment exposes patient history, saves treatment, and prints its prescription", async ({ page }) => {
+  const patient = await db.patient.create({ data: { name: "Prescription Patient", phone: "+923001112233" } });
+  const appointment = await db.appointment.create({ data: { patientId: patient.id, startsAt: new Date(), reason: "Follow-up consultation" } });
+  await page.goto("/login");
+  await page.getByLabel("Email address").fill("prescriptions@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("Prescription test password!");
+  await page.getByRole("button", { name: "Sign in to workspace" }).click();
+  await expect(page.getByRole("heading", { name: "Welcome, Clinic Tester." })).toBeVisible();
+  await page.goto("/treatments");
+  await page.getByLabel("Treatment name").fill("Wound dressing");
+  await page.getByLabel("Description").fill("Clean and dress the wound");
+  await page.getByRole("button", { name: "Add treatment" }).click();
+  await expect(page).toHaveURL(/\/treatments\?created=1/);
+  await expect(page.getByText("Wound dressing", { exact: true })).toBeVisible();
+  await page.goto(`/appointments/${appointment.id}/consultation`);
+  await page.getByLabel("Treatment", { exact: true }).selectOption({ label: "Wound dressing" });
+  await page.getByLabel("Clinical notes").fill("Dressing changed successfully");
+  await page.getByRole("button", { name: "Save treatment" }).click();
+  await expect(page).toHaveURL(/saved=1/);
+  await expect(page.getByText("Dressing changed successfully")).toBeVisible();
+  await page.getByLabel("Medicine & strength").fill("Amoxicillin 500 mg");
+  await page.getByLabel("Dosage").fill("500 mg");
+  await page.getByLabel("English timing").fill("Morning and evening");
+  await page.getByLabel("Timing code").fill("1-0-1");
+  await page.getByLabel("Duration").fill("5 days");
+  await page.getByLabel("Instructions", { exact: true }).fill("Take after meals");
+  await page.getByRole("button", { name: "Finalize & preview" }).click();
+  await expect(page).toHaveURL(/\/prescriptions\//);
+  await expect(page.getByRole("button", { name: "Print prescription" })).toBeVisible();
+  await expect(page.getByText("1-0-1", { exact: true })).toBeVisible();
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByRole("button", { name: "Print prescription" })).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Rx", exact: true })).toBeVisible();
+  await page.goto(`/patients/${patient.id}`);
+  await expect(page.getByRole("heading", { name: "Patient history" })).toBeVisible();
+  await expect(page.getByText("Wound dressing", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "View", exact: true })).toBeVisible();
+});
