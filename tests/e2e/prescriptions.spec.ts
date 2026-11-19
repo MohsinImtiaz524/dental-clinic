@@ -38,14 +38,13 @@ test("appointment exposes patient history, saves treatment, and prints its presc
   await expect(page.getByText("Dressing changed successfully")).toBeVisible();
   await page.getByLabel("Medicine & strength").fill("Amoxicillin 500 mg");
   await page.getByLabel("Dosage").fill("500 mg");
-  await page.getByLabel("English timing").fill("Morning and evening");
-  await page.getByLabel("Timing code").fill("1-0-1");
+  await page.getByRole("button", { name: "BD", exact: true }).click();
   await page.getByLabel("Duration").fill("5 days");
   await page.getByLabel("Instructions", { exact: true }).fill("Take after meals");
   await page.getByRole("button", { name: "Finalize & preview" }).click();
   await expect(page).toHaveURL(/\/prescriptions\//);
   await expect(page.getByRole("button", { name: "Print prescription" })).toBeVisible();
-  await expect(page.getByText("1-0-1", { exact: true })).toBeVisible();
+  await expect(page.getByText(/BD.*دن میں دو بار/)).toBeVisible();
   await page.emulateMedia({ media: "print" });
   await expect(page.getByRole("button", { name: "Print prescription" })).toBeHidden();
   await expect(page.getByRole("heading", { name: "Rx", exact: true })).toBeVisible();

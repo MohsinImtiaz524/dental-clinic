@@ -26,21 +26,22 @@ test("clinic calendar uses Pakistan time, including midnight and month boundarie
   assert.equal(clinicDayRange("not-a-date"), null);
 });
 
-test("prescription fields include an English schedule and custom timing code", () => {
+test("prescription schedule codes map to Urdu instructions", () => {
   const form = new FormData();
   form.append("medicine", "Amoxicillin");
   form.append("strength", "500 mg");
   form.append("dosage", "500 mg");
-  form.append("route", "Oral");
-  form.append("frequency", "Morning and evening");
-  form.append("timing", "1-0-1");
+  form.append("scheduleCode", "BD");
   form.append("duration", "5 days");
   form.append("instructions", "After meals");
   form.append("quantity", "10 tablets");
   const parsed = parsePrescriptionItems(form);
   assert.ok("items" in parsed);
-  if ("items" in parsed) assert.equal(parsed.items[0].timing, "1-0-1");
-  form.set("timing", "");
+  if ("items" in parsed) {
+    assert.equal(parsed.items[0].timing, "BD");
+    assert.equal(parsed.items[0].frequency, "دن میں دو بار");
+  }
+  form.set("scheduleCode", "");
   assert.ok("error" in parsePrescriptionItems(form));
 });
 

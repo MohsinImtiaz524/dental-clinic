@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MEDICINE_SCHEDULES } from "@/lib/prescriptions";
 
 function Message({ state }: { state: { error?: string; success?: string } }) {
   return (
@@ -126,7 +127,7 @@ export function ConsultationForm({
       <input type="hidden" name="appointmentId" value={appointmentId} />
       <div className="grid gap-4 md:grid-cols-2">
         <TextArea
-          label="Medical history"
+          label="History"
           name="medicalHistory"
           value={consultation?.medicalHistory}
         />
@@ -221,7 +222,7 @@ export function ConsultationPanelForm({
         </h2>
         <div className="grid gap-3 md:grid-cols-2">
           <TextArea
-            label="Medical history"
+            label="History"
             name="medicalHistory"
             value={consultation?.medicalHistory}
             placeholder="e.g. Diabetes, hypertension, allergies, or relevant medicines"
@@ -324,18 +325,7 @@ export function ConsultationPanelForm({
                 placeholder="e.g. 1 tablet"
                 required={false}
               />
-              <Field
-                label="English timing"
-                name="frequency"
-                placeholder="e.g. Morning and night"
-                required={false}
-              />
-              <Field
-                label="Timing code"
-                name="timing"
-                placeholder="e.g. 1-0-1"
-                required={false}
-              />
+              <ScheduleField required={false} />
               <Field
                 label="Duration"
                 name="duration"
@@ -363,13 +353,6 @@ export function ConsultationPanelForm({
           <Plus />
           Add medicine
         </Button>
-        <div className="mt-3">
-          <TextArea
-            label="Doctor's notes"
-            name="notes"
-            placeholder="e.g. Home-care advice, precautions, or follow-up instructions"
-          />
-        </div>
       </section>
       <Message state={state} />
       <div className="sticky bottom-4 rounded-xl border bg-white/95 p-3 shadow-lg backdrop-blur">
@@ -406,7 +389,6 @@ export function PrescriptionForm({ appointmentId }: { appointmentId: string }) {
           className="break-inside-avoid rounded-xl border bg-[#fafcfb] p-4"
         >
           <input type="hidden" name="strength" value="" />
-          <input type="hidden" name="route" value="Oral" />
           <input type="hidden" name="quantity" value="" />
           <div className="mb-3 flex items-center justify-between">
             <legend className="text-sm font-semibold">
@@ -459,12 +441,7 @@ export function PrescriptionForm({ appointmentId }: { appointmentId: string }) {
               />
             </div>
             <Field label="Dosage" name="dosage" placeholder="1 tablet" />
-            <Field
-              label="English timing"
-              name="frequency"
-              placeholder="Morning and night"
-            />
-            <Field label="Timing code" name="timing" placeholder="1-0-1" />
+            <ScheduleField />
             <Field label="Duration" name="duration" placeholder="5 days" />
             <Field
               label="Instructions"
@@ -485,7 +462,6 @@ export function PrescriptionForm({ appointmentId }: { appointmentId: string }) {
         <Plus />
         Add another medicine
       </Button>
-      <TextArea label="Doctor's notes (optional)" name="notes" />
       <div className="max-w-xs">
         <Field
           label="Follow-up date (optional)"
@@ -571,6 +547,13 @@ function TextArea({
       />
     </div>
   );
+}
+
+function ScheduleField({ required = true }: { required?: boolean }) {
+  const id = useId();
+  const [selected, setSelected] = useState("BD");
+  const schedule = MEDICINE_SCHEDULES.find(item => item.code === selected);
+  return <fieldset className="space-y-2"><legend id={id} className="text-sm font-medium">Schedule</legend><input type="hidden" name="scheduleCode" value={selected} required={required}/><div role="group" aria-labelledby={id} className="flex flex-wrap gap-2">{MEDICINE_SCHEDULES.map(item => <button key={item.code} type="button" aria-pressed={selected === item.code} onClick={() => setSelected(item.code)} className="min-w-11 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors aria-pressed:border-[#176452] aria-pressed:bg-[#176452] aria-pressed:text-white">{item.code}</button>)}</div><p className="text-sm font-medium text-[#176452]" dir="auto">{schedule?.urdu}</p></fieldset>;
 }
 
 function ConsentFields({ consultation }: { consultation?: Consultation | null }) {
