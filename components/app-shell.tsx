@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ClipboardPlus, HeartPulse, LayoutDashboard, LogOut, Menu, Settings2, ShieldCheck, SlidersHorizontal, Users, X } from "lucide-react";
+import { CalendarDays, ClipboardPlus, HeartPulse, LayoutDashboard, LogOut, Menu, Settings2, SlidersHorizontal, Users, X } from "lucide-react";
 import { useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ export function AppShell({ user, children }: {
       <Link href="/dashboard" title="Rashid Clinic home" className="mb-12 flex items-center gap-3 font-semibold tracking-tight"><span className="rounded-xl bg-[#164f40] p-2.5 text-white"><HeartPulse className="size-5" /></span><span className="hidden xl:inline">Rashid Clinic<span className="mt-1 block text-[9px] font-medium tracking-[0.2em] text-[#81958a]">CLINIC WORKSPACE</span></span></Link>
       <p className="mb-4 hidden px-3 text-[10px] font-semibold tracking-[0.16em] text-[#95a39c] xl:block">WORKSPACE</p>
       <Navigation pathname={pathname} onNavigate={() => setOpen(false)} />
-      <div className="mt-auto"><div className="mb-6 hidden rounded-xl border border-[#e7eee8] bg-[#f7faf8] p-4 xl:block"><ShieldCheck className="mb-3 size-5 text-[#4d8065]" /><p className="text-xs font-semibold">A little more peace of mind.</p><p className="mt-2 text-xs leading-5 text-[#7c8d82]">Your clinic, connected in one private workspace.</p></div><form action={logoutAction}><Button variant="ghost" type="submit" aria-label="Sign out" className="w-full justify-start text-[#6b7d76]"><LogOut className="size-4" /><span className="hidden xl:inline">Sign out</span></Button></form></div>
+      <div className="mt-auto"><form action={logoutAction}><Button variant="ghost" type="submit" aria-label="Sign out" className="w-full justify-start text-[#6b7d76]"><LogOut className="size-4" /><span className="hidden xl:inline">Sign out</span></Button></form></div>
     </aside>
     <Dialog.Portal><Dialog.Backdrop className="fixed inset-0 z-40 bg-black/30" /><Dialog.Popup className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white p-6 text-[#193c33] shadow-xl"><div className="mb-8 flex items-center justify-between"><Dialog.Title className="font-semibold">Rashid Clinic</Dialog.Title><Dialog.Close render={<Button variant="ghost" size="icon" aria-label="Close navigation" />}><X /></Dialog.Close></div><Dialog.Description className="sr-only">Navigate your clinic workspace.</Dialog.Description><Navigation pathname={pathname} onNavigate={() => setOpen(false)} mobile /><form className="mt-auto" action={logoutAction}><Button type="submit" variant="outline"><LogOut />Sign out</Button></form></Dialog.Popup></Dialog.Portal>
     <div className="md:pl-20 xl:pl-60">

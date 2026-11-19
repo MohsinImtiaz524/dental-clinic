@@ -36,7 +36,7 @@ export default async function PrescriptionPage({ params }: { params: Promise<{ i
     <article className="prescription-print rx-page">
       <header className="rx-header">
         <div className="rx-doctor"><h1>{d.title} {d.fullName || "Doctor"}</h1><p>{[d.qualifications, d.specialization].filter(Boolean).join(" · ")}</p><p>{d.designation}</p>{experiences.map((experience, index) => <p key={index}>{experience}</p>)}</div>
-        <div className="rx-logo-center">{c.logoDataUrl && <Image unoptimized src={c.logoDataUrl} alt="Clinic logo" width={120} height={120} className="rx-logo" />}</div>
+        <div className="rx-logo-center">{c.logoDataUrl && <Image unoptimized src={c.logoDataUrl} alt="Clinic logo" width={132} height={132} className="rx-logo" />}</div>
         <div className="rx-clinic"><h2>{c.clinicName || "Clinic"}</h2><p>{[c.phone, c.whatsapp && `WhatsApp ${c.whatsapp}`].filter(Boolean).join(" · ")}</p>{c.openingDays && <p>{c.openingDays}</p>}{timing && <p>{timing}</p>}</div>
         <div className="rx-registrations"><span>{d.pmdcNumber ? `PMDC: ${d.pmdcNumber}` : "PMDC: —"}</span><span>{c.phcRegistrationNumber ? `PHC Registration: ${c.phcRegistrationNumber}` : "PHC Registration: —"}</span><span>{c.phcLicenseNumber ? `PHC License: ${c.phcLicenseNumber}` : "PHC License: —"}</span></div>
       </header>

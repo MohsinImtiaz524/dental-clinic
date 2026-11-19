@@ -68,6 +68,16 @@
 @media print{.rx-doctor h1{font-size:16px!important;line-height:1.15;white-space:nowrap}.rx-patient>div{display:grid;grid-template-columns:auto minmax(0,1fr)}.rx-patient span{white-space:nowrap;font-size:8.5px}.rx-patient b{font-size:9.5px}.rx-history .rx-side-section{display:grid;grid-template-columns:auto minmax(0,1fr)}.rx-history .rx-side-section h3{white-space:nowrap;font-size:7.5px}.rx-history .rx-side-section p{margin-top:0;font-size:8.5px}.rx-medical-sidebar h2,.rx-sidebar-facilities h2{font-size:13px}.rx-medical-row{display:grid;grid-template-columns:auto minmax(0,1fr)}.rx-medical-row span{font-size:7.5px}.rx-medical-row b,.rx-sidebar-facilities p{font-size:8px}}
 @media print{.rx-medical-row-stacked{display:block}.rx-medical-row-stacked span{display:block;font-size:8.5px}.rx-medical-row-stacked b{display:block;margin-top:3px;font-size:8px}}
 @media print{.rx-medical-narrative{display:block;padding:4px 0}.rx-medical-narrative h3{display:block;font-size:9px;font-weight:700}.rx-medical-narrative p{display:block;margin-top:1px;font-size:7.5px;line-height:1.25}}
+@media print{
+  @page{size:A4;margin:5mm}
+  html,body{width:auto!important;min-width:0!important}
+  .rx-page{width:100%!important;min-height:287mm;margin:0!important;padding:5mm!important}
+  .rx-medical-row span{font-size:8.5px;font-weight:600}
+  .rx-medical-row b{font-size:9px;font-weight:500}
+}
+.rx-logo-center{min-width:132px}.rx-logo{width:132px;height:132px;max-width:132px;max-height:132px}
+@media(max-width:800px){.rx-logo-center{min-width:80px}.rx-logo{width:80px;height:80px;max-width:80px;max-height:80px}}
+@media print{.rx-logo-center{min-width:132px}.rx-logo{width:132px;height:132px;max-width:132px;max-height:132px}}
 
 :root {
   --background: oklch(1 0 0);
